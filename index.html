@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/zepto/1.2.0/zepto.min.js"></script>
+</head>
+
+<body>
+    <div class="web-im">
+        <div class="header im-title">聊天室</div>
+        <div class="content im-record">
+        </div>
+        <div class="footer im-input">
+            <input type="text" id="msg" placeholder="请输入内容">
+            <button id="send">发送</button>
+        </div>
+    </div>
+
+</body>
+<script>
+    $(function() {
+        function getQueryString(name) {
+            var reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)', 'i');
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) {
+                return unescape(r[2]);
+            }
+            return null;
+        }
+        var uid = '';
+        var nickname = new Date();
+        var socket = '';
+        var msg = '';
+        var messageList = [];
+        var user = {}
+        uid = user.uid ? user.uid : "";
+
+        if (!uid) {
+            conWebSocket()
+        } else {
+            conWebSocket();
+        }
+        document.onkeydown = function(event) {
+            var e = event || window.event;
+            if (e && e.keyCode == 13) { //回车键的键值为13
+                send()
+            }
+        }
+        $("#send").on('click', function() {
+            sendMessage(100, $("#msg").val());
+        })
+
+        function sendMessage(type, msg) {
+            socket.send(JSON.stringify({
+                uid,
+                type,
+                nickname,
+                msg,
+                bridge: [getQueryString("uid"), getQueryString("touid")]
+            }));
+            msg = '';
+        }
+
+
+
+        function conWebSocket() {
+            let vm = this;
+            if (window.WebSocket) {
+                socket = new WebSocket('ws://localhost:8001');
+                socket.onopen = function(e) {
+                    console.log("连接服务器成功");
+                    if (!uid) {
+                        // 生成新的用户id,并存入localStorage
+                        uid = getQueryString("uid");
+                        sendMessage(1)
+                    }
+                }
+                socket.onclose = function(e) {
+                    console.log("服务器关闭");
+                }
+                socket.onerror = function() {
+                        console.log("连接出错");
+                    }
+                    // 接收服务器的消息
+                socket.onmessage = function(e) {
+                    var message = JSON.parse(e.data);
+                    messageList.push(message);
+                    console.log(message)
+                    $(".im-record").append(`<p>${message.msg}</p>`)
+                }
+            }
+        }
+    })
+</script>
+
+</html>
